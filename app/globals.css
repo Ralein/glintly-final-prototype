@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 5.9% 10%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+    --scroll-progress: 0;
+  }
+
+  .dark {
+    /* Updated color scheme for Glintly educational platform */
+    --background: 222 84% 4.9%;
+    --foreground: 0 0% 100%;
+    --card: 188 95% 19.6%;
+    --card-foreground: 0 0% 100%;
+    --popover: 180 100% 97%;
+    --popover-foreground: 213 27% 25%;
+    --primary: 188 95% 19.6%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 25% 27%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 149 80% 90%;
+    --muted-foreground: 213 27% 25%;
+    --accent: 84 81% 44%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 24 95% 53%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 213 27% 25%;
+    --input: 180 100% 97%;
+    --ring: 84 81% 44%;
+    --chart-1: 84 81% 44%;
+    --chart-2: 24 95% 53%;
+    --chart-3: 188 95% 19.6%;
+    --chart-4: 31 91% 51%;
+    --chart-5: 142 76% 36%;
+    --sidebar: 222 84% 4.9%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 188 95% 19.6%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 84 81% 44%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 213 27% 25%;
+    --sidebar-ring: 84 81% 44%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Rebuilt component styles without problematic classes */
+@layer components {
+  .action-button {
+    @apply w-12 h-12 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/30 transition-all duration-200;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.05);
+    }
+  }
+
+  .pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .focus-visible:focus-visible {
+    @apply ring-2 ring-accent ring-offset-2 ring-offset-background outline-none;
+  }
+}
+
+@layer utilities {
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  .will-change-opacity {
+    will-change: opacity;
+  }
+
+  .gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+}
+
+@theme inline {
+  @keyframes pulse {
+  0%, 100% {
+    opacity: 0.3;
+    }
+  50% {
+    opacity: 1;
+    }
+  }
+}
