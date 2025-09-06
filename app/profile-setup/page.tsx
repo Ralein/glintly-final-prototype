@@ -1,7 +1,6 @@
 "use client"
 
 import React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,8 +23,10 @@ import {
   Target,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { useUser } from "@/contexts/user-context"
+import { useAuth } from "@/contexts/firebase-auth-provider"
 import { useRouter } from "next/navigation"
+import { doc, setDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 const interests = [
   { id: "learning", name: "Learning", icon: BookOpen, color: "bg-blue-500" },
@@ -133,7 +134,7 @@ export default function ProfileSetupPage() {
   const [bio, setBio] = useState("")
   const [selectedInterests, setSelectedInterests] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const { user, updateUser, isAuthenticated } = useUser()
+  const { user, isAuthenticated } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -142,15 +143,8 @@ export default function ProfileSetupPage() {
       return
     }
 
-    if (user?.setupComplete) {
-      router.push("/feed")
-      return
-    }
-
     if (user) {
-      setUsername(user.username || "")
-      setBio(user.bio || "")
-      setSelectedInterests(user.interests || [])
+      setUsername(user.displayName || "")
     }
   }, [isAuthenticated, user, router])
 
@@ -166,19 +160,33 @@ export default function ProfileSetupPage() {
       alert("Please select at least one interest")
       return
     }
+    if (!user) {
+      alert("You must be logged in to set up a profile.")
+      return
+    }
     setIsLoading(true)
 
-    setTimeout(() => {
-      updateUser({
+    try {
+      await setDoc(doc(db, "users", user.uid), {
         username,
         bio,
         interests: selectedInterests,
         setupComplete: true,
-      })
+        createdAt: new Date().toISOString(),
+      });
 
+      // Optionally update the user's display name in Firebase Auth
+      // await updateProfile(user, { displayName: username });
+
+      setTimeout(() => {
+        setIsLoading(false)
+        router.push("/feed")
+      }, 4500)
+    } catch (error) {
+      console.error("Error setting up profile:", error)
+      alert("Failed to set up profile. Please try again.")
       setIsLoading(false)
-      router.push("/feed")
-    }, 4500)
+    }
   }
 
   if (!isAuthenticated || !user) {

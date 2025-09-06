@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+export const dynamic = 'force-dynamic'
+
 // Mock revisit videos - videos saved >3 days ago
 const mockRevisitVideos = [
   {

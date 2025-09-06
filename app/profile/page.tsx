@@ -23,9 +23,20 @@ import {
   LogOut,
 } from "lucide-react"
 import Link from "next/link"
-import { useUser } from "@/contexts/user-context"
+import { useAuth } from "@/contexts/firebase-auth-provider"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
+import { doc, getDoc, updateDoc } from "firebase/firestore"
+import { db, auth } from "@/lib/firebase"
+import { signOut } from "firebase/auth"
+
+// Define a type for the user profile data from Firestore
+interface UserProfile {
+  username: string;
+  bio: string;
+  interests: string[];
+  createdAt: string;
+}
 
 const mockSavedVideos = [
   {
@@ -84,9 +95,10 @@ const mockAchievements = [
 ]
 
 export default function ProfilePage() {
-  const { user, updateUser, logout, isAuthenticated } = useUser()
+  const { user, isAuthenticated } = useAuth()
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [editForm, setEditForm] = useState({
     username: "",
     bio: "",
@@ -98,24 +110,40 @@ export default function ProfilePage() {
       return
     }
 
-    if (user) {
-      setEditForm({
-        username: user.username || "",
-        bio: user.bio || "",
-      })
+    const fetchUserProfile = async () => {
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid)
+        const userDocSnap = await getDoc(userDocRef)
+        if (userDocSnap.exists()) {
+          const profileData = userDocSnap.data() as UserProfile
+          setUserProfile(profileData)
+          setEditForm({
+            username: profileData.username || "",
+            bio: profileData.bio || "",
+          })
+        } else {
+          // If no profile, maybe redirect to profile setup
+          router.push("/profile-setup")
+        }
+      }
     }
+
+    fetchUserProfile()
   }, [isAuthenticated, user, router])
 
-  const handleSaveProfile = () => {
-    updateUser({
+  const handleSaveProfile = async () => {
+    if (!user) return
+    const userDocRef = doc(db, "users", user.uid)
+    await updateDoc(userDocRef, {
       username: editForm.username,
       bio: editForm.bio,
     })
+    setUserProfile((prev) => prev ? { ...prev, ...editForm } : null)
     setIsEditing(false)
   }
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await signOut(auth)
     router.push("/")
   }
 
@@ -124,7 +152,7 @@ export default function ProfilePage() {
     return dateObj.toLocaleDateString("en-US", { month: "long", year: "numeric" })
   }
 
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated || !user || !userProfile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -140,7 +168,7 @@ export default function ProfilePage() {
   }
 
   const mockStats = {
-    daysActive: Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) || 1,
+    daysActive: Math.floor((Date.now() - new Date(userProfile.createdAt).getTime()) / (1000 * 60 * 60 * 24)) || 1,
     videosSaved: 127,
     videosWatched: 892,
     currentStreak: 12,
@@ -164,7 +192,7 @@ export default function ProfilePage() {
               size="icon"
               onClick={() => {
                 if (isEditing) {
-                  setEditForm({ username: user.username || "", bio: user.bio || "" })
+                  setEditForm({ username: userProfile.username || "", bio: userProfile.bio || "" })
                 }
                 setIsEditing(!isEditing)
               }}
@@ -184,9 +212,9 @@ export default function ProfilePage() {
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
               <Avatar className="w-20 h-20">
-                <AvatarImage src="/placeholder.svg?height=100&width=100" alt={user.username} />
+                <AvatarImage src={user.photoURL || "/placeholder.svg?height=100&width=100"} alt={userProfile.username} />
                 <AvatarFallback className="bg-accent text-accent-foreground text-xl font-bold">
-                  {user.username.charAt(0).toUpperCase()}
+                  {userProfile.username.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
 
@@ -212,16 +240,16 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <>
-                    <h2 className="text-xl font-space-grotesk font-bold mb-1">@{user.username}</h2>
+                    <h2 className="text-xl font-space-grotesk font-bold mb-1">@{userProfile.username}</h2>
                     <p className="text-muted-foreground text-sm mb-3 leading-relaxed">
-                      {user.bio || "No bio added yet. Click edit to add one!"}
+                      {userProfile.bio || "No bio added yet. Click edit to add one!"}
                     </p>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                       <Calendar className="h-4 w-4" />
-                      <span>Joined {formatDate(user.createdAt)}</span>
+                      <span>Joined {formatDate(userProfile.createdAt)}</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {user.interests.map((interest) => (
+                      {userProfile.interests.map((interest) => (
                         <Badge key={interest} variant="secondary" className="bg-accent/10 text-accent">
                           {interest}
                         </Badge>

@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+export const dynamic = 'force-dynamic'
+
 // Mock saved videos storage - in production this would be in database
 const mockSavedVideos = [
   {

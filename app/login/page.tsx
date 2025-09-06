@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,57 +8,77 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { useUser } from "@/contexts/user-context"
 import { useRouter } from "next/navigation"
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth"
+import { auth, googleProvider } from "@/lib/firebase"
+import { FirebaseError } from "firebase/app"
+import { useAuth } from "@/contexts/firebase-auth-provider"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const { login, isAuthenticated, user } = useUser()
+  const [error, setError] = useState("")
+  const { isAuthenticated, user } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      if (user.setupComplete) {
-        router.push("/feed")
-      } else {
-        router.push("/profile-setup")
-      }
+    if (isAuthenticated) {
+      router.push("/feed")
     }
-  }, [isAuthenticated, user, router])
+  }, [isAuthenticated, router])
+
+  const getErrorMessage = (error: FirebaseError) => {
+    switch (error.code) {
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address.'
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+        return 'Invalid credentials. Please check your email and password.'
+      case 'auth/popup-closed-by-user':
+        return 'Sign in was cancelled.'
+      case 'auth/popup-blocked':
+        return 'Pop-up was blocked by your browser. Please allow pop-ups for this site.'
+      default:
+        return 'An error occurred during sign in. Please try again.'
+    }
+  }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
     setIsLoading(true)
 
-    setTimeout(() => {
-      // Mock user data - in production this would come from API
-      const userData = {
-        email,
-        username: email.split("@")[0],
-        setupComplete: false,
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
+      router.push("/feed")
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        setError(getErrorMessage(error))
+      } else {
+        setError("An unexpected error occurred")
       }
-
-      login(userData)
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   const handleGoogleLogin = async () => {
+    setError("")
     setIsLoading(true)
 
-    setTimeout(() => {
-      // Mock Google user data
-      const userData = {
-        email: "user@gmail.com",
-        username: "GoogleUser",
-        setupComplete: false,
+    try {
+      await signInWithPopup(auth, googleProvider)
+      router.push("/feed")
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        setError(getErrorMessage(error))
+      } else {
+        setError("An unexpected error occurred")
       }
-
-      login(userData)
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -85,6 +104,11 @@ export default function LoginPage() {
             <CardDescription className="text-foreground/80">Sign in to continue your learning journey</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {error && (
+              <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                {error}
+              </div>
+            )}
             <Button
               onClick={handleGoogleLogin}
               disabled={isLoading}
@@ -108,7 +132,7 @@ export default function LoginPage() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Continue with Google
+              {isLoading ? "Signing in..." : "Continue with Google"}
             </Button>
 
             <div className="relative">

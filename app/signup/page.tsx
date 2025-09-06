@@ -9,35 +9,101 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from "firebase/auth"
+import { auth, googleProvider } from "@/lib/firebase"
+import { FirebaseError } from "firebase/app"
 
 export default function SignupPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const router = useRouter()
+
+  const getErrorMessage = (error: FirebaseError) => {
+    switch (error.code) {
+      case 'auth/email-already-in-use':
+        return 'An account with this email already exists'
+      case 'auth/weak-password':
+        return 'Password should be at least 6 characters'
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address'
+      case 'auth/popup-closed-by-user':
+        return 'Sign up was cancelled'
+      case 'auth/popup-blocked':
+        return 'Pop-up was blocked by your browser. Please allow pop-ups for this site'
+      default:
+        return 'An error occurred during sign up. Please try again.'
+    }
+  }
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+
     if (password !== confirmPassword) {
-      alert("Passwords don't match")
+      setError("Passwords don't match")
       return
     }
+
+    if (password.length < 6) {
+      setError("Password should be at least 6 characters")
+      return
+    }
+
+    if (!firstName.trim() || !lastName.trim()) {
+      setError("Please enter your first and last name")
+      return
+    }
+
     setIsLoading(true)
-    // TODO: Implement email signup logic
-    setTimeout(() => {
+
+    try {
+      // Create user account
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      
+      // Update user profile with name
+      await updateProfile(userCredential.user, {
+        displayName: `${firstName.trim()} ${lastName.trim()}`
+      })
+
+      // Redirect to profile setup
+      router.push("/profile-setup")
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        setError(getErrorMessage(error))
+      } else {
+        setError("An unexpected error occurred")
+      }
+    } finally {
       setIsLoading(false)
-      // Redirect to profile setup for new users
-      window.location.href = "/profile-setup"
-    }, 1000)
+    }
   }
 
   const handleGoogleSignup = async () => {
+    setError("")
     setIsLoading(true)
-    // TODO: Implement Google OAuth signup
-    setTimeout(() => {
+
+    try {
+      const result = await signInWithPopup(auth, googleProvider)
+      
+      // Check if this is a new user or existing user
+      // For new users, redirect to profile setup
+      // For existing users, redirect to dashboard or home
+      router.push("/profile-setup")
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        setError(getErrorMessage(error))
+      } else {
+        setError("An unexpected error occurred")
+      }
+    } finally {
       setIsLoading(false)
-      window.location.href = "/profile-setup"
-    }, 1000)
+    }
   }
 
   return (
@@ -63,6 +129,12 @@ export default function SignupPage() {
             <CardDescription>Create your account to start learning</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {error && (
+              <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                {error}
+              </div>
+            )}
+
             <Button
               onClick={handleGoogleSignup}
               disabled={isLoading}
@@ -86,7 +158,7 @@ export default function SignupPage() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Continue with Google
+              {isLoading ? "Signing up..." : "Continue with Google"}
             </Button>
 
             <div className="relative">
@@ -99,6 +171,28 @@ export default function SignupPage() {
             </div>
 
             <form onSubmit={handleEmailSignup} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Input
+                    type="text"
+                    placeholder="First name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                    className="bg-input/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Input
+                    type="text"
+                    placeholder="Last name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                    className="bg-input/50"
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
                 <Input
                   type="email"
@@ -112,7 +206,7 @@ export default function SignupPage() {
               <div className="space-y-2">
                 <Input
                   type="password"
-                  placeholder="Create a password"
+                  placeholder="Create a password (min. 6 characters)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -129,7 +223,11 @@ export default function SignupPage() {
                   className="bg-input/50"
                 />
               </div>
-              <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={isLoading}>
+              <Button 
+                type="submit" 
+                className="w-full bg-accent hover:bg-accent/90" 
+                disabled={isLoading}
+              >
                 {isLoading ? "Creating account..." : "Create account"}
               </Button>
             </form>

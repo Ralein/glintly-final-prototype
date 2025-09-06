@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { VideoPlayer } from "@/components/video-player"
 import { Header } from "@/components/header"
 import { motion, AnimatePresence } from "framer-motion"
-import { useUser } from "@/contexts/user-context"
+import { useAuth } from "@/contexts/firebase-auth-provider"
 import { useRouter } from "next/navigation"
 
 // Mock video data - in real app this would come from API
@@ -71,7 +71,7 @@ export default function FeedPage() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const { user, isAuthenticated, isLoading: userLoading } = useUser()
+  const { user, isAuthenticated, isLoading: userLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -79,26 +79,7 @@ export default function FeedPage() {
       router.push("/login")
       return
     }
-
-    if (!userLoading && user && !user.setupComplete) {
-      router.push("/profile-setup")
-      return
-    }
   }, [isAuthenticated, user, userLoading, router])
-
-  useEffect(() => {
-    if (user && user.interests.length > 0) {
-      const personalizedVideos = mockVideos.filter((video) =>
-        user.interests.some(
-          (interest) => interest.toLowerCase() === video.category.toLowerCase() || video.category === "motivation", // Always include motivation
-        ),
-      )
-
-      if (personalizedVideos.length > 0) {
-        setVideos(personalizedVideos)
-      }
-    }
-  }, [user])
 
   // Handle scroll to change videos
   const handleScroll = () => {
