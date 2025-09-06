@@ -123,12 +123,12 @@ export async function GET(request: Request) {
       filteredPosts = mockNews.filter((post) => post.category.toLowerCase() === category.toLowerCase())
     }
 
-    const categories = [...new Set(mockNews.map((post) => post.category))]
+
 
     return NextResponse.json({
       posts: filteredPosts,
       total: filteredPosts.length,
-      categories,
+
     })
   } catch (error) {
     console.error("Error fetching news:", error)

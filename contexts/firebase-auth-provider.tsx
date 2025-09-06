@@ -25,6 +25,12 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${idToken}`,
           },
+          body: JSON.stringify({
+            uid: user.uid,
+            email: user.email || undefined,
+            username: user.displayName || undefined,
+            photoUrl: user.photoURL || undefined,
+          }),
         });
         const dbUser = await res.json();
         setUser(dbUser);

@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export const dynamic = 'force-dynamic'
 
-// Mock revisit videos - videos saved >3 days ago
 const mockRevisitVideos = [
   {
     id: "revisit-1",
@@ -61,7 +60,7 @@ export async function GET(request: NextRequest) {
     revisitVideos.sort((a, b) => {
       // First sort by priority
       const priorityOrder = { high: 3, medium: 2, low: 1 }
-      const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority]
+      const priorityDiff = priorityOrder[b.priority as keyof typeof priorityOrder] - priorityOrder[a.priority as keyof typeof priorityOrder]
       if (priorityDiff !== 0) return priorityDiff
 
       // Then by oldest saved first

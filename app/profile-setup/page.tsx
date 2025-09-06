@@ -25,7 +25,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/firebase-auth-provider"
 import { useRouter } from "next/navigation"
-import { doc, setDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
 const interests = [
@@ -132,18 +131,31 @@ function PersonalizationLoadingScreen({ selectedInterests }: { selectedInterests
 export default function ProfileSetupPage() {
   const [username, setUsername] = useState("")
   const [bio, setBio] = useState("")
+  const [photoUrl, setPhotoUrl] = useState("") // New state for photoUrl
   const [selectedInterests, setSelectedInterests] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const { user, isAuthenticated } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
+    console.log("🔍 ProfileSetup useEffect - Auth state:", {
+      isAuthenticated,
+      user: user ? {
+        uid: user.uid,
+        displayName: user.displayName,
+        email: user.email,
+        emailVerified: user.emailVerified
+      } : null
+    })
+
     if (!isAuthenticated) {
+      console.log("❌ Not authenticated, redirecting to login")
       router.push("/login")
       return
     }
 
     if (user) {
+      console.log("✅ User found, setting username:", user.displayName || "")
       setUsername(user.displayName || "")
     }
   }, [isAuthenticated, user, router])
@@ -156,38 +168,96 @@ export default function ProfileSetupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    console.log("🚀 Form submission started")
+    console.log("📊 Current state:", {
+      username,
+      bio,
+      selectedInterests,
+      user: user ? {
+        uid: user.uid,
+        displayName: user.displayName,
+        email: user.email
+      } : null,
+      isAuthenticated
+    })
+
     if (selectedInterests.length === 0) {
+      console.log("❌ No interests selected")
       alert("Please select at least one interest")
       return
     }
-    if (!user) {
+
+    if (!user || !user.uid) {
+      console.log("❌ No user or user.uid:", { user: !!user, uid: user?.uid })
       alert("You must be logged in to set up a profile.")
       return
     }
+
+    console.log("✅ Validation passed, proceeding with API call")
     setIsLoading(true)
 
+    const requestData: any = {
+      uid: user.uid,
+      username,
+    };
+
+    if (user.email) {
+      requestData.email = user.email;
+    }
+
+    if (photoUrl) {
+      requestData.photoUrl = photoUrl;
+    }
+
+    console.log("📤 Request data being sent:", requestData)
+    console.log("📝 JSON.stringify result:", JSON.stringify(requestData))
+    console.log("📏 JSON string length:", JSON.stringify(requestData).length)
+
     try {
-      await setDoc(doc(db, "users", user.uid), {
-        username,
-        bio,
-        interests: selectedInterests,
-        setupComplete: true,
-        createdAt: new Date().toISOString(),
+      console.log("🌐 Making fetch request to /api/user")
+      
+      const response = await fetch("/api/user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
       });
+
+      console.log("📥 Response received:", {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.log("❌ Response not ok, error text:", errorText)
+        throw new Error(`HTTP error! status: ${response.status}, text: ${errorText}`)
+      } else {
+        const responseData = await response.json()
+        console.log("✅ Success response:", responseData)
+      }
 
       // Optionally update the user's display name in Firebase Auth
       // await updateProfile(user, { displayName: username });
 
       setTimeout(() => {
-        setIsLoading(false)
-        router.push("/feed")
-      }, 4500)
+        console.log("🔄 Redirecting to feed after delay")
+        setIsLoading(false);
+        router.push("/feed");
+      }, 4500);
     } catch (error) {
-      console.error("Error setting up profile:", error)
-      alert("Failed to set up profile. Please try again.")
-      setIsLoading(false)
+      console.error("💥 Error setting up profile:", error);
+      alert("Failed to set up profile. Please try again.");
+      setIsLoading(false);
     }
   }
+
+  // Add debug info to the UI during development
+  const isDebugMode = process.env.NODE_ENV === 'development'
 
   if (!isAuthenticated || !user) {
     return (
@@ -199,6 +269,11 @@ export default function ProfileSetupPage() {
             className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-4"
           />
           <p className="text-muted-foreground">Loading...</p>
+          {isDebugMode && (
+            <div className="mt-4 text-xs text-muted-foreground">
+              Debug: isAuthenticated={String(isAuthenticated)}, user={user ? 'exists' : 'null'}
+            </div>
+          )}
         </div>
       </div>
     )
@@ -220,6 +295,8 @@ export default function ProfileSetupPage() {
           </div>
           <h1 className="text-3xl font-space-grotesk font-bold mb-2">Welcome to Glintly</h1>
           <p className="text-muted-foreground">Let's personalize your learning experience</p>
+          
+         
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -239,6 +316,18 @@ export default function ProfileSetupPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
+                  className="bg-input/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="photoUrl" className="text-sm font-medium">
+                  Profile Picture URL (optional)
+                </label>
+                <Input
+                  id="photoUrl"
+                  placeholder="e.g., https://example.com/your-photo.jpg"
+                  value={photoUrl}
+                  onChange={(e) => setPhotoUrl(e.target.value)}
                   className="bg-input/50"
                 />
               </div>

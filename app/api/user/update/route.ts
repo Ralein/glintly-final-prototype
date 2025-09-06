@@ -1,73 +1,44 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 
-export const dynamic = 'force-dynamic'
+const prisma = new PrismaClient();
 
-// Mock user data storage - in production this would be in database
-const mockUsers = [
-  {
-    id: "user-1",
-    username: "learner_alex",
-    email: "alex@example.com",
-    bio: "Passionate about learning new skills every day. Currently focusing on web development and cooking!",
-    avatar: "/placeholder.svg?height=100&width=100",
-    interests: ["Learning", "Tech", "Cooking", "Motivation"],
-    joinedAt: new Date("2024-01-15"),
-    stats: {
-      daysActive: 45,
-      videosSaved: 127,
-      videosWatched: 892,
-      currentStreak: 12,
-      longestStreak: 28,
-    },
-  },
-]
-
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const { userId = "user-1", username, bio, interests } = body
-
-    // Find user
-    const userIndex = mockUsers.findIndex((user) => user.id === userId)
-    if (userIndex === -1) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    if (request.headers.get('content-type') !== 'application/json') {
+      return new NextResponse('Invalid Content-Type. Expected application/json', { status: 400 });
     }
 
-    // Update user data
-    const updatedUser = {
-      ...mockUsers[userIndex],
-      ...(username && { username }),
-      ...(bio && { bio }),
-      ...(interests && { interests }),
-      updatedAt: new Date(),
+    let uid, username, bio;
+    try {
+      ({ uid, username, bio } = await request.json());
+    } catch (jsonError) {
+      console.error('Error parsing JSON body:', jsonError);
+      return new NextResponse('Invalid JSON body', { status: 400 });
     }
 
-    mockUsers[userIndex] = updatedUser
+    if (!uid) {
+      return new NextResponse('Missing user ID', { status: 400 });
+    }
 
-    return NextResponse.json({
-      success: true,
-      user: updatedUser,
-      message: "Profile updated successfully",
-    })
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { id: uid },
+        data: {
+          username,
+          bio,
+        },
+      });
+      return NextResponse.json(updatedUser);
+    } catch (prismaError: any) {
+      if (prismaError.code === 'P2025') {
+        console.error('User not found for update:', uid);
+        return new NextResponse('User not found', { status: 404 });
+      }
+      throw prismaError; // Re-throw other Prisma errors
+    }
   } catch (error) {
-    console.error("Update user error:", error)
-    return NextResponse.json({ error: "Failed to update profile" }, { status: 500 })
-  }
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get("userId") || "user-1"
-
-    const user = mockUsers.find((user) => user.id === userId)
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    return NextResponse.json({ user })
-  } catch (error) {
-    console.error("Get user error:", error)
-    return NextResponse.json({ error: "Failed to fetch user" }, { status: 500 })
+    console.error('Error updating user profile:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

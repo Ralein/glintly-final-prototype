@@ -26,8 +26,7 @@ import Link from "next/link"
 import { useAuth } from "@/contexts/firebase-auth-provider"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { doc, getDoc, updateDoc } from "firebase/firestore"
-import { db, auth } from "@/lib/firebase"
+import { auth } from "@/lib/firebase"
 import { signOut } from "firebase/auth"
 
 // Define a type for the user profile data from Firestore
@@ -112,35 +111,54 @@ export default function ProfilePage() {
 
     const fetchUserProfile = async () => {
       if (user) {
-        const userDocRef = doc(db, "users", user.uid)
-        const userDocSnap = await getDoc(userDocRef)
-        if (userDocSnap.exists()) {
-          const profileData = userDocSnap.data() as UserProfile
-          setUserProfile(profileData)
+        try {
+          const response = await fetch(`/api/user?uid=${user.uid}`);
+          if (!response.ok) {
+            if (response.status === 404) {
+              router.push("/profile-setup");
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const profileData = await response.json();
+          setUserProfile(profileData);
           setEditForm({
             username: profileData.username || "",
             bio: profileData.bio || "",
-          })
-        } else {
-          // If no profile, maybe redirect to profile setup
-          router.push("/profile-setup")
+          });
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+          // Handle error, maybe redirect to an error page or show a message
         }
       }
-    }
+    };
 
     fetchUserProfile()
   }, [isAuthenticated, user, router])
 
   const handleSaveProfile = async () => {
-    if (!user) return
-    const userDocRef = doc(db, "users", user.uid)
-    await updateDoc(userDocRef, {
-      username: editForm.username,
-      bio: editForm.bio,
-    })
-    setUserProfile((prev) => prev ? { ...prev, ...editForm } : null)
-    setIsEditing(false)
-  }
+    if (!user) return;
+    try {
+      const response = await fetch("/api/user/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          uid: user.uid,
+          username: editForm.username,
+          bio: editForm.bio,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      setUserProfile((prev) => (prev ? { ...prev, ...editForm } : null));
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error saving user profile:", error);
+      // Handle error, maybe show a toast notification
+    }
+  };
 
   const handleLogout = async () => {
     await signOut(auth)
