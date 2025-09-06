@@ -22,7 +22,8 @@ import {
   Target,
   ChevronRight,
   Link,
-  Send
+  Send,
+  Sparkle
 } from "lucide-react";
 
 // Animated Text Cycle Component
@@ -426,7 +427,7 @@ function GlintlyCyberpunkLanding() {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/30 backdrop-blur-sm"
               >
-                <Zap className="w-4 h-4 text-purple-400" />
+                <Sparkle className="w-4 h-4 text-purple-400 fill-current" />
                 <span className="text-sm font-medium text-purple-300">Next-Gen Learning Platform</span>
               </motion.div>
               
