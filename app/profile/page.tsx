@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -28,14 +28,6 @@ import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { auth } from "@/lib/firebase"
 import { signOut } from "firebase/auth"
-
-// Define a type for the user profile data from Firestore
-interface UserProfile {
-  username: string;
-  bio: string;
-  interests: string[];
-  createdAt: string;
-}
 
 const mockSavedVideos = [
   {
@@ -94,57 +86,41 @@ const mockAchievements = [
 ]
 
 export default function ProfilePage() {
-  const { user, isAuthenticated } = useAuth()
+  const { user, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [editForm, setEditForm] = useState({
     username: "",
     bio: "",
   })
 
   useEffect(() => {
+    if (isLoading) return; // Wait for auth to resolve
+
     if (!isAuthenticated) {
       router.push("/login")
       return
     }
 
-    const fetchUserProfile = async () => {
-      if (user) {
-        try {
-          const response = await fetch(`/api/user?uid=${user.uid}`);
-          if (!response.ok) {
-            if (response.status === 404) {
-              router.push("/profile-setup");
-            }
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const profileData = await response.json();
-          setUserProfile(profileData);
-          setEditForm({
-            username: profileData.username || "",
-            bio: profileData.bio || "",
-          });
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
-          // Handle error, maybe redirect to an error page or show a message
-        }
-      }
-    };
-
-    fetchUserProfile()
-  }, [isAuthenticated, user, router])
+    if (user) {
+      setEditForm({
+        username: user.username || "",
+        bio: user.bio || "",
+      })
+    }
+  }, [isLoading, isAuthenticated, user, router])
 
   const handleSaveProfile = async () => {
     if (!user) return;
     try {
-      const response = await fetch("/api/user/update", {
+      const response = await fetch("/api/user", { // Corrected API endpoint
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          uid: user.uid,
+          uid: user.id, // Corrected to user.id
+          email: user.email, // Pass email to identify user
           username: editForm.username,
           bio: editForm.bio,
         }),
@@ -152,8 +128,8 @@ export default function ProfilePage() {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      setUserProfile((prev) => (prev ? { ...prev, ...editForm } : null));
       setIsEditing(false);
+      router.refresh(); // Refresh page to get updated user data
     } catch (error) {
       console.error("Error saving user profile:", error);
       // Handle error, maybe show a toast notification
@@ -170,7 +146,7 @@ export default function ProfilePage() {
     return dateObj.toLocaleDateString("en-US", { month: "long", year: "numeric" })
   }
 
-  if (!isAuthenticated || !user || !userProfile) {
+  if (isLoading || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -186,7 +162,7 @@ export default function ProfilePage() {
   }
 
   const mockStats = {
-    daysActive: Math.floor((Date.now() - new Date(userProfile.createdAt).getTime()) / (1000 * 60 * 60 * 24)) || 1,
+    daysActive: Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) || 1,
     videosSaved: 127,
     videosWatched: 892,
     currentStreak: 12,
@@ -210,7 +186,7 @@ export default function ProfilePage() {
               size="icon"
               onClick={() => {
                 if (isEditing) {
-                  setEditForm({ username: userProfile.username || "", bio: userProfile.bio || "" })
+                  setEditForm({ username: user.username || "", bio: user.bio || "" })
                 }
                 setIsEditing(!isEditing)
               }}
@@ -230,9 +206,9 @@ export default function ProfilePage() {
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
               <Avatar className="w-20 h-20">
-                <AvatarImage src={user.photoURL || "/placeholder.svg?height=100&width=100"} alt={userProfile.username} />
+                <AvatarImage src={user.image || "/placeholder.svg?height=100&width=100"} alt={user.username || 'User'} />
                 <AvatarFallback className="bg-accent text-accent-foreground text-xl font-bold">
-                  {userProfile.username.charAt(0).toUpperCase()}
+                  {user.username?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
 
@@ -258,16 +234,16 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <>
-                    <h2 className="text-xl font-space-grotesk font-bold mb-1">@{userProfile.username}</h2>
+                    <h2 className="text-xl font-space-grotesk font-bold mb-1">@{user.username}</h2>
                     <p className="text-muted-foreground text-sm mb-3 leading-relaxed">
-                      {userProfile.bio || "No bio added yet. Click edit to add one!"}
+                      {user.bio || "No bio added yet. Click edit to add one!"}
                     </p>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                       <Calendar className="h-4 w-4" />
-                      <span>Joined {formatDate(userProfile.createdAt)}</span>
+                      <span>Joined {formatDate(user.createdAt)}</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {userProfile.interests.map((interest) => (
+                      {user.interests.map((interest) => (
                         <Badge key={interest} variant="secondary" className="bg-accent/10 text-accent">
                           {interest}
                         </Badge>

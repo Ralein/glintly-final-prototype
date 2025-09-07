@@ -1,24 +1,20 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url = "prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza192WUhNWko5UF9KSElEUkNvT0d2MmIiLCJhcGlfa2V5IjoiMDFLNEczRjU2OUI2RVZGMDYxOEpaWFY4QkQiLCJ0ZW5hbnRfaWQiOiI1ZDMzZDJhOTRhOGZiMGU0N2RlNjk4NzEyM2I1NmEyODY2OTI5MDM2MmQ3M2NhMTVkM2Q4NDMyOWFhNWNiNzJmIiwiaW50ZXJuYWxfc2VjcmV0IjoiMGNiNjY0OTUtNzMzYS00ZWU0LTlhNGEtNDU5OWQ1YjY4YzJkIn0.UCCWEs3bvRfbXe4La7ihHa2DQ1zFCFTKBwexa6d_0EM"
-  directUrl = "postgres://5d33d2a94a8fb0e47de6987123b56a28669290362d73ca15d3d84329aa5cb72f:sk_vYHMZJ9P_JHIDRCoOGv2b@db.prisma.io:5432/postgres?sslmode=require"
+  provider  = "postgresql"
+  url       = "postgresql://neondb_owner:npg_LuHnDG8Y1NZA@ep-floral-wildflower-ad3ytrw5-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 }
 
 model User {
-  id        String    @id
-  username  String?   @unique
-  email     String?   @unique
+  id        String   @id
+  username  String?
+  email     String?  @unique
   image     String?
   bio       String?
-  interests String[]  @default([])
-  createdAt DateTime  @default(now())
+  interests String[] @default([])
+  createdAt DateTime @default(now())
   posts     Post[]
 }
 
@@ -28,6 +24,6 @@ model Post {
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  author    User     @relation(fields: [authorId], references: [id])
   authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
 }

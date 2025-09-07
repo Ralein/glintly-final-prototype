@@ -1,10 +1,11 @@
 'use client';
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { onAuthStateChanged, type User } from "firebase/auth";
+import { onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { type User as PrismaUser } from "@prisma/client";
 
 interface AuthContextType {
-  user: User | null;
+  user: PrismaUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
@@ -12,13 +13,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<PrismaUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const idToken = await user.getIdToken();
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        const idToken = await firebaseUser.getIdToken();
         const res = await fetch('/api/user', {
           method: 'POST',
           headers: {
@@ -26,13 +27,13 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
             Authorization: `Bearer ${idToken}`,
           },
           body: JSON.stringify({
-            uid: user.uid,
-            email: user.email || undefined,
-            username: user.displayName || undefined,
-            photoUrl: user.photoURL || undefined,
+            uid: firebaseUser.uid,
+            email: firebaseUser.email || undefined,
+            username: firebaseUser.displayName || undefined,
+            photoUrl: firebaseUser.photoURL || undefined,
           }),
         });
-        const dbUser = await res.json();
+        const dbUser: PrismaUser = await res.json();
         setUser(dbUser);
       } else {
         setUser(null);

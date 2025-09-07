@@ -33,9 +33,9 @@ export async function POST(request: Request) {
       return new NextResponse('Invalid Content-Type. Expected application/json', { status: 400 });
     }
 
-    let uid, email, username, photoUrl;
+    let uid, email, username, photoUrl, bio, interests;
     try {
-      ({ uid, email, username, photoUrl } = await request.json());
+      ({ uid, email, username, photoUrl, bio, interests } = await request.json());
     } catch (jsonError) {
       console.error('Error parsing JSON body:', jsonError);
       return new NextResponse('Invalid JSON body', { status: 400 });
@@ -46,19 +46,21 @@ export async function POST(request: Request) {
     }
 
     const user = await prisma.user.upsert({
-      where: { id: uid },
+      where: { email: email },
       update: {
-        username: username || '',
-        email: email,
-        image: photoUrl || '',
+        username: username,
+        image: photoUrl,
+        bio: bio,
+        interests: interests,
       },
       create: {
         id: uid,
         username: username || '',
-        bio: '',
+        bio: bio || '',
         email: email,
         createdAt: new Date(),
         image: photoUrl || '',
+        interests: interests || [],
       },
     });
 
