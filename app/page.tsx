@@ -349,12 +349,14 @@ function GlintlyCyberpunkLanding() {
             
             <div className="hidden md:flex items-center gap-4">
               {isAuthenticated && user ? (
-                <Link href="/profile">
-                  <Avatar className="w-10 h-10 cursor-pointer">
-                    <AvatarImage src={user.image || "/placeholder.svg"} alt={user.username || "User"} />
-                    <AvatarFallback>{user.username?.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                </Link>
+
+                  <span className="cursor-pointer">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={user.image || "/placeholder.svg"} alt={user.username || "User"} />
+                      <AvatarFallback>{user.username?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  </span>
+
               ) : (
                 <>
                   <Button variant="ghost" size="sm" onClick={() => router.push("/login")}>
