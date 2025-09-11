@@ -455,17 +455,20 @@ function GlintlyCyberpunkLanding() {
                 Discover bite-sized learning content that fits your lifestyle — from motivation to mastery, all in short, engaging videos.
 
               </motion.p>
-              
+
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.8 }}
                 className="flex flex-col sm:flex-row gap-6 justify-center items-center"
               >
-                <Button size="lg" className="group" onClick={() => {}}>
+                <Button 
+                  size="lg" 
+                  className="group"
+                  onClick={() => window.location.href = '/login'}
+                >
                   <span className="flex items-center">
-                    <a href="/login"> Initialize Learning </a>
-
+                    Initialize Learning
                     <motion.div
                       className="ml-2"
                       animate={{ x: [0, 5, 0] }}
@@ -475,15 +478,9 @@ function GlintlyCyberpunkLanding() {
                     </motion.div>
                   </span>
                 </Button>
-                
-                <Button variant="outline" size="lg" className="group" onClick={() => {}}>
-                  <span className="flex items-center">
-                    Experience Demo
-                    <Play className="ml-2 w-5 h-5" />
-                  </span>
-                </Button>
               </motion.div>
             </motion.div>
+            
           </div>
         </section>
 
