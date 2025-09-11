@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
@@ -21,10 +22,13 @@ import {
   Brain,
   Target,
   ChevronRight,
-  Link,
   Send,
   Sparkle
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/firebase-auth-provider";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 // Animated Text Cycle Component
 interface AnimatedTextCycleProps {
@@ -284,6 +288,8 @@ const itemFadeIn = {
 };
 
 function GlintlyCyberpunkLanding() {
+  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrollY, setScrollY] = useState(0);
 
@@ -342,15 +348,23 @@ function GlintlyCyberpunkLanding() {
               
             
             <div className="hidden md:flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => {}}>
-               
-                <a href="/login"> Sign In
-                </a>
-              </Button>
-              <Button variant="primary" size="sm" onClick={() => {}}>
-                <a href="/login"> Get Started
-                </a>
-              </Button>
+              {isAuthenticated && user ? (
+                <Link href="/profile">
+                  <Avatar className="w-10 h-10 cursor-pointer">
+                    <AvatarImage src={user.image || "/placeholder.svg"} alt={user.username || "User"} />
+                    <AvatarFallback>{user.username?.charAt(0).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                </Link>
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" onClick={() => router.push("/login")}>
+                    Sign In
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={() => router.push("/login")}>
+                    Get Started
+                  </Button>
+                </>
+              )}
             </div>
             
             <button 
@@ -465,7 +479,7 @@ function GlintlyCyberpunkLanding() {
                 <Button 
                   size="lg" 
                   className="group"
-                  onClick={() => window.location.href = '/login'}
+                  onClick={() => router.push(isAuthenticated ? '/feed' : '/login')}
                 >
                   <span className="flex items-center">
                     Initialize Learning
