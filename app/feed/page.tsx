@@ -26,8 +26,7 @@ import {
   BookOpen,
   Filter,
   Zap,
-  Settings,
-  BrainCircuit,
+  Settings
 } from "lucide-react"
 
 // Mock user context for demo
@@ -171,7 +170,7 @@ const Header = ({ onAINewsClick, onProfileClick }: {
             onClick={onAINewsClick}
             className="relative w-11 h-11 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300"
           >
-            <BrainCircuit className="h-5 w-5" />
+            <Zap className="h-5 w-5" />
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
           </motion.button>
           

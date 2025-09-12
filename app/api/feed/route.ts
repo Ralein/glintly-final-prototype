@@ -1,137 +1,131 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic'
+const getSearchTermsForInterests = (interests: string[]) => {
+    const interestMap: Record<string, string[]> = {
+      'tech': ['programming tutorial', 'web development', 'machine learning explained', 'coding bootcamp'],
+      'learning': ['study techniques', 'learning methods', 'how to learn faster', 'memory techniques'],
+      'motivation': ['motivation speech', 'success mindset', 'productivity tips', 'goal setting'],
+      'cooking': ['cooking tutorial', 'healthy recipes', 'culinary techniques', 'chef tips'],
+      'finance': ['personal finance', 'investing basics', 'budgeting tips', 'financial literacy'],
+      'wellness': ['mental health', 'mindfulness meditation', 'stress management', 'self care'],
+      'fitness': ['workout routine', 'exercise tutorial', 'fitness tips', 'health advice'],
+      'career': ['career advice', 'job interview tips', 'professional development', 'leadership skills'],
+      'creativity': ['design tutorial', 'creative process', 'art techniques', 'innovation methods'],
+      'self-improvement': ['personal development', 'life skills', 'habit formation', 'self growth']
+    };
 
-// Mock video data - in production this would come from database
-const mockVideos = [
-  {
-    id: "1",
-    title: "5-Minute Pasta Recipe That Will Change Your Life",
-    channel: "QuickCook",
-    videoUrl: "/cooking-pasta-recipe-video.jpg",
-    thumbnail: "/delicious-pasta-dish.jpg",
-    likes: 1234,
-    isLiked: false,
-    isSaved: false,
-    category: "cooking",
-    duration: "5:23",
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-  },
-  {
-    id: "2",
-    title: "React Hooks Explained in 60 Seconds",
-    channel: "CodeMaster",
-    videoUrl: "/react-hooks-coding-tutorial.jpg",
-    thumbnail: "/react-code-on-screen.png",
-    likes: 2156,
-    isLiked: true,
-    isSaved: false,
-    category: "tech",
-    duration: "1:00",
-    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-  },
-  {
-    id: "3",
-    title: "Morning Motivation: Start Your Day Right",
-    channel: "MotivateDaily",
-    videoUrl: "/sunrise-motivation-video.jpg",
-    thumbnail: "/inspiring-sunrise-landscape.jpg",
-    likes: 892,
-    isLiked: false,
-    isSaved: true,
-    category: "motivation",
-    duration: "3:45",
-    createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
-  },
-  {
-    id: "4",
-    title: "CSS Grid vs Flexbox: When to Use What",
-    channel: "WebDevPro",
-    videoUrl: "/css-grid-flexbox.png",
-    thumbnail: "/css-code-layout-examples.jpg",
-    likes: 1567,
-    isLiked: false,
-    isSaved: false,
-    category: "tech",
-    duration: "7:30",
-    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8 hours ago
-  },
-  {
-    id: "5",
-    title: "10-Minute Full Body Workout",
-    channel: "FitQuick",
-    videoUrl: "/home-workout-exercise-video.jpg",
-    thumbnail: "/person-doing-exercises-at-home.jpg",
-    likes: 3421,
-    isLiked: true,
-    isSaved: true,
-    category: "fitness",
-    duration: "10:12",
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
-  },
-]
+    const searchTerms: string[] = [];
+    interests.forEach(interest => {
+      const terms = interestMap[interest];
+      if (terms) {
+        searchTerms.push(...terms);
+      }
+    });
 
-// Mock revisit videos for nudges
-const mockRevisitVideos = [
-  {
-    id: "revisit-1",
-    title: "JavaScript Tips Every Developer Should Know",
-    channel: "CodeMaster",
-    thumbnail: "/react-code-on-screen.png",
-    savedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-    duration: "8:15",
-    category: "tech",
-  },
-]
+    return searchTerms.length > 0 ? searchTerms : ['educational content', 'tutorial', 'how to learn'];
+};
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const page = Number.parseInt(searchParams.get("page") || "1")
-    const limit = Number.parseInt(searchParams.get("limit") || "10")
-    const interests = searchParams.get("interests")?.split(",") || []
-
-    // Simulate smart feed algorithm
-    let feedVideos = [...mockVideos]
-
-    // Filter by user interests if provided
-    if (interests.length > 0) {
-      feedVideos = feedVideos.filter((video) => interests.includes(video.category))
-    }
-
-    // Add revisit nudges every 7 videos
-    const videosWithNudges = []
-    for (let i = 0; i < feedVideos.length; i++) {
-      videosWithNudges.push(feedVideos[i])
-
-      // Insert revisit nudge every 7 videos
-      if ((i + 1) % 7 === 0 && mockRevisitVideos.length > 0) {
-        const revisitVideo = mockRevisitVideos[0]
-        videosWithNudges.push({
-          ...revisitVideo,
-          id: `nudge-${i}`,
-          type: "revisit-nudge",
-          daysAgo: Math.floor((Date.now() - revisitVideo.savedAt.getTime()) / (1000 * 60 * 60 * 24)),
-        })
+const categorizeVideo = (title: string, description: string, interests: string[]) => {
+    const content = (title + ' ' + description).toLowerCase();
+    
+    const keywords: Record<string, string[]> = {
+        'tech': ['programming', 'coding', 'software', 'development', 'computer', 'technology'],
+        'learning': ['study', 'learn', 'education', 'tutorial', 'course', 'lesson'],
+        'motivation': ['motivation', 'inspiration', 'success', 'mindset', 'productivity'],
+        'cooking': ['cooking', 'recipe', 'chef', 'culinary', 'food', 'kitchen'],
+        'finance': ['finance', 'money', 'investing', 'business', 'economics', 'budget'],
+        'wellness': ['wellness', 'health', 'meditation', 'mindfulness', 'mental health'],
+        'fitness': ['fitness', 'workout', 'exercise', 'training', 'gym', 'health'],
+        'career': ['career', 'job', 'professional', 'leadership', 'work', 'business'],
+        'creativity': ['design', 'art', 'creative', 'drawing', 'innovation', 'artistic'],
+        'self-improvement': ['improvement', 'development', 'growth', 'habits', 'skills']
+    };
+    
+    for (const interest of interests) {
+      const interestKeywords = keywords[interest];
+      if (interestKeywords && interestKeywords.some(keyword => content.includes(keyword))) {
+        return interest;
       }
     }
+    
+    return 'learning'; // default category
+};
 
-    // Pagination
-    const startIndex = (page - 1) * limit
-    const endIndex = startIndex + limit
-    const paginatedVideos = videosWithNudges.slice(startIndex, endIndex)
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const interestsParam = searchParams.get('interests');
+  const pageToken = searchParams.get('pageToken') || '';
+
+  if (!interestsParam) {
+    return NextResponse.json({ error: 'Interests are required' }, { status: 400 });
+  }
+
+  const interests = interestsParam.split(',');
+
+  const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+  if (!YOUTUBE_API_KEY) {
+    console.error('YOUTUBE_API_KEY is not set in environment variables.');
+    return NextResponse.json({ error: 'Server configuration error: YouTube API key is missing.' }, { status: 500 });
+  }
+
+  try {
+    const searchTerms = getSearchTermsForInterests(interests);
+    const randomSearchTerm = searchTerms[Math.floor(Math.random() * searchTerms.length)];
+    const YOUTUBE_API_BASE_URL = 'https://www.googleapis.com/youtube/v3';
+
+    // 1. Search for videos
+    const searchApiUrl = new URL(`${YOUTUBE_API_BASE_URL}/search`);
+    searchApiUrl.searchParams.set('part', 'snippet');
+    searchApiUrl.searchParams.set('q', `${randomSearchTerm} tutorial educational`);
+    searchApiUrl.searchParams.set('type', 'video');
+    searchApiUrl.searchParams.set('videoDuration', 'medium');
+    searchApiUrl.searchParams.set('videoDefinition', 'high');
+    searchApiUrl.searchParams.set('maxResults', '10');
+    searchApiUrl.searchParams.set('pageToken', pageToken);
+    searchApiUrl.searchParams.set('key', YOUTUBE_API_KEY);
+
+    const searchResponse = await fetch(searchApiUrl.toString());
+    if (!searchResponse.ok) {
+      const errorData = await searchResponse.json();
+      console.error('YouTube Search API Error:', errorData);
+      return NextResponse.json({ error: errorData.error?.message || 'Failed to search videos' }, { status: searchResponse.status });
+    }
+    const searchData = await searchResponse.json();
+
+    if (!searchData.items || searchData.items.length === 0) {
+      return NextResponse.json({ videos: [], nextPageToken: '' });
+    }
+
+    // 2. Get video details
+    const videoIds = searchData.items.map((item: any) => item.id.videoId).join(',');
+    
+    const detailsApiUrl = new URL(`${YOUTUBE_API_BASE_URL}/videos`);
+    detailsApiUrl.searchParams.set('part', 'snippet,statistics,contentDetails');
+    detailsApiUrl.searchParams.set('id', videoIds);
+    detailsApiUrl.searchParams.set('key', YOUTUBE_API_KEY);
+
+    const detailsResponse = await fetch(detailsApiUrl.toString());
+    if (!detailsResponse.ok) {
+        const errorData = await detailsResponse.json();
+        console.error('YouTube Videos API Error:', errorData);
+        return NextResponse.json({ error: errorData.error?.message || 'Failed to fetch video details' }, { status: detailsResponse.status });
+    }
+    const detailsData = await detailsResponse.json();
+
+    // 3. Combine and categorize
+    const videos = detailsData.items.map((video: any) => ({
+      ...video,
+      category: categorizeVideo(video.snippet.title, video.snippet.description, interests)
+    }));
 
     return NextResponse.json({
-      videos: paginatedVideos,
-      pagination: {
-        page,
-        limit,
-        total: videosWithNudges.length,
-        hasMore: endIndex < videosWithNudges.length,
-      },
-    })
+      videos: videos,
+      nextPageToken: searchData.nextPageToken || '',
+    });
+
   } catch (error) {
-    console.error("Feed API error:", error)
-    return NextResponse.json({ error: "Failed to fetch feed" }, { status: 500 })
+    console.error('Error in /api/feed:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
   }
 }
