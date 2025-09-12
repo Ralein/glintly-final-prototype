@@ -333,11 +333,15 @@ function GlintlyCyberpunkLanding() {
               className="flex items-center gap-3"
             >
               <div className="relative">
-                <motion.div
-                
-                  className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center"
+                <motion.div 
+                  className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center cursor-pointer shadow-lg shadow-purple-500/25"
+                  whileHover={{ 
+                    scale: 1.05,
+                    boxShadow: "0 25px 50px -12px rgba(168, 85, 247, 0.4)" 
+                  }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <span className="text-white font-bold text-lg">G</span>
+                  <Sparkles className="h-6 w-6 text-white" />
                 </motion.div>
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg opacity-20 blur-md"></div>
               </div>
